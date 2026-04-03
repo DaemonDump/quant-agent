@@ -1,0 +1,573 @@
+{
+  "model_name": "ml_model",
+  "version": "202603301925",
+  "saved_at": "2026-03-30T19:25:14.452529",
+  "model_type": "xgboost",
+  "actual_model_type": "xgboost",
+  "model_file": "model_weights.pkl",
+  "feature_names": [
+    "close",
+    "volume",
+    "amount",
+    "return_1d",
+    "return_5d",
+    "return_20d",
+    "return_60d",
+    "ma_5",
+    "ma_10",
+    "ma_20",
+    "ma_60",
+    "ma_bias_5",
+    "ma_bias_10",
+    "ma_bias_20",
+    "volatility_20d",
+    "volatility_60d",
+    "volume_ma5_ratio",
+    "volume_ma20_ratio",
+    "amount_ma_ratio",
+    "trend_strength",
+    "close_above_ma20",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_hist",
+    "atr_14",
+    "obv",
+    "pe",
+    "pb",
+    "turnover_rate",
+    "buy_lg_amount",
+    "net_amount",
+    "net_amount_rate",
+    "market_cap"
+  ],
+  "feature_count": 34,
+  "training_metrics": {
+    "val_accuracy": 0.5332438084619483,
+    "val_f1_weighted": 0.43661928086934315,
+    "val_logloss": 0.9784854642744207,
+    "test_accuracy": 0.49377171582760404,
+    "test_f1_weighted": 0.41030397170810734,
+    "test_logloss": 1.0080835833979656,
+    "wf_window_count": 12,
+    "wf_test_accuracy_mean": 0.4643741206523466,
+    "wf_test_f1_weighted_mean": 0.3888762925477281,
+    "wf_test_logloss_mean": 1.0470014966030152
+  },
+  "config": {
+    "data": {
+      "data_sources": {
+        "market": "tushare",
+        "fundamental": "tushare",
+        "alternative": "tushare"
+      },
+      "storage_format": "parquet",
+      "partition_by_date": true,
+      "enable_data_lineage": true,
+      "enable_version_control": true,
+      "check_missing_values": true,
+      "check_price_anomalies": true,
+      "check_timestamp_alignment": true,
+      "raw_data_dir": "data/tushare/raw",
+      "processed_data_dir": "data/tushare/processed",
+      "feature_data_dir": "data/tushare/features"
+    },
+    "feature": {
+      "technical_indicators": [
+        "sma",
+        "ema",
+        "rsi",
+        "macd",
+        "bollinger_bands",
+        "atr"
+      ],
+      "statistical_features": [
+        "returns_skewness",
+        "returns_kurtosis",
+        "volatility_cluster",
+        "price_momentum_1m",
+        "price_momentum_3m",
+        "price_momentum_6m",
+        "price_momentum_12m"
+      ],
+      "microstructure_features": [
+        "bid_ask_spread",
+        "order_imbalance",
+        "illiquidity_ratio"
+      ],
+      "macro_features": [
+        "term_spread",
+        "credit_spread",
+        "vix_index",
+        "exchange_rate"
+      ],
+      "avoid_lookahead_bias": true,
+      "check_feature_stability": true,
+      "enable_neutralization": true,
+      "neutralize_by": [
+        "market_cap",
+        "industry"
+      ]
+    },
+    "label": {
+      "task_type": "classification",
+      "classification_type": "binary",
+      "binary_threshold": 0.0,
+      "ternary_thresholds": {
+        "up": 0.02,
+        "down": -0.02
+      },
+      "regression_target": "log_return",
+      "prediction_horizon": 5,
+      "ranking_method": "cross_section",
+      "use_close_to_close": true,
+      "consider_transaction_cost": true,
+      "transaction_cost_rate": 0.001
+    },
+    "split": {
+      "train_ratio": 0.7,
+      "val_ratio": 0.15,
+      "test_ratio": 0.15,
+      "split_strategy": "temporal",
+      "use_time_series_cv": true,
+      "cv_window_size": 252,
+      "cv_step_size": 21,
+      "enable_oot": true,
+      "oot_months": 6
+    },
+    "model": {
+      "model_type": "xgboost",
+      "loss_function": "weighted_cross_entropy",
+      "metrics": [
+        "ic",
+        "rank_ic",
+        "annual_return",
+        "max_drawdown",
+        "sharpe_ratio"
+      ],
+      "enable_time_decay": true,
+      "decay_factor": 0.995,
+      "enable_market_cap_weighting": true,
+      "dropout_rate": 0.3,
+      "l2_regularization": 0.0001,
+      "enable_feature_selection": true,
+      "feature_selection_method": "l1"
+    },
+    "training": {
+      "optimization_method": "bayesian",
+      "n_trials": 100,
+      "early_stopping_patience": 15,
+      "n_estimators": 1000,
+      "max_depth": 6,
+      "learning_rate": 0.01,
+      "min_child_weight": 1.0,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "enable_early_stopping": true,
+      "monitor_metric": "val_ic",
+      "patience": 20,
+      "min_delta": 0.001,
+      "save_best_model": true,
+      "enable_model_ema": true,
+      "ema_decay": 0.999
+    },
+    "model_management": {
+      "use_semantic_versioning": true,
+      "version_format": "MAJOR.MINOR.PATCH",
+      "enable_model_registry": true,
+      "enable_model_card": true,
+      "production_ready_threshold": 0.03,
+      "enable_shadow_mode": false,
+      "shadow_traffic_ratio": 0.1,
+      "models_dir": "data/tushare/models",
+      "enable_hot_swap": true,
+      "enable_ab_testing": true
+    },
+    "prediction": {
+      "input_format": "json",
+      "output_format": "json",
+      "enable_missing_value_handling": true,
+      "missing_value_strategy": "fill_with_mean",
+      "enable_data_delay_check": true,
+      "max_delay_seconds": 300,
+      "enable_drift_detection": true,
+      "drift_threshold": 0.1,
+      "enable_outlier_detection": true,
+      "outlier_threshold": 0.2,
+      "enable_api_key_auth": true,
+      "rate_limit_per_minute": 1000,
+      "enable_batch_prediction": true,
+      "enable_websocket": false
+    },
+    "risk_control": {
+      "ensure_no_data_leakage": true,
+      "ensure_temporal_ordering": true,
+      "ensure_no_future_info": true,
+      "retrain_frequency": "monthly",
+      "detect_non_stationarity": true,
+      "max_train_val_ic_gap": 0.02,
+      "enable_cross_validation": true,
+      "consider_slippage": true,
+      "slippage_rate": 0.001,
+      "consider_transaction_cost": true,
+      "handle_limit_up_down": true,
+      "handle_suspension": true
+    }
+  },
+  "production_ready": true,
+  "metadata": {
+    "task_type": "classification",
+    "actual_model_type": "xgboost",
+    "trainer_name": "xgboost_classifier",
+    "n_classes": 3,
+    "classes": [
+      0,
+      1,
+      2
+    ],
+    "best_iteration": 323,
+    "best_score": 0.9784854643256988,
+    "model_params": {
+      "n_estimators": 1000,
+      "max_depth": 6,
+      "learning_rate": 0.01,
+      "min_child_weight": 1.0,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "early_stopping_rounds": 20
+    },
+    "train_rows": 1309562,
+    "val_rows": 324677,
+    "test_rows": 108216,
+    "split_mode": "walk_forward",
+    "split": {
+      "train": [
+        "20241001",
+        "20250930"
+      ],
+      "val": [
+        "20251001",
+        "20251231"
+      ],
+      "test": [
+        "20260101",
+        "20260131"
+      ]
+    },
+    "window": {
+      "start": "20220101",
+      "end": "20260326"
+    },
+    "walk_forward": {
+      "mode": "walk_forward",
+      "train_months": 12,
+      "val_months": 3,
+      "test_months": 1,
+      "step_months": 3,
+      "window_count": 12,
+      "windows": [
+        {
+          "index": 1,
+          "train": {
+            "start": "20220101",
+            "end": "20221231",
+            "rows": 1144378
+          },
+          "val": {
+            "start": "20230101",
+            "end": "20230331",
+            "rows": 292839
+          },
+          "test": {
+            "start": "20230401",
+            "end": "20230430",
+            "rows": 95447
+          },
+          "best_iteration": 547,
+          "val_accuracy": 0.5686469356882109,
+          "val_f1_weighted": 0.48077256969293747,
+          "val_logloss": 0.9567263629669903,
+          "test_accuracy": 0.4710362819156181,
+          "test_f1_weighted": 0.4046605592188629,
+          "test_logloss": 1.0414243188806735
+        },
+        {
+          "index": 2,
+          "train": {
+            "start": "20220401",
+            "end": "20230331",
+            "rows": 1170004
+          },
+          "val": {
+            "start": "20230401",
+            "end": "20230630",
+            "rows": 298053
+          },
+          "test": {
+            "start": "20230701",
+            "end": "20230731",
+            "rows": 107676
+          },
+          "best_iteration": 339,
+          "val_accuracy": 0.5257554864403311,
+          "val_f1_weighted": 0.4318122344509153,
+          "val_logloss": 0.9973031323164868,
+          "test_accuracy": 0.6417493220401946,
+          "test_f1_weighted": 0.5595349519914273,
+          "test_logloss": 0.8840816541377599
+        },
+        {
+          "index": 3,
+          "train": {
+            "start": "20220701",
+            "end": "20230630",
+            "rows": 1192009
+          },
+          "val": {
+            "start": "20230701",
+            "end": "20230930",
+            "rows": 330267
+          },
+          "test": {
+            "start": "20231001",
+            "end": "20231031",
+            "rows": 88475
+          },
+          "best_iteration": 866,
+          "val_accuracy": 0.6061368529099184,
+          "val_f1_weighted": 0.5134900172988668,
+          "val_logloss": 0.9117007354697532,
+          "test_accuracy": 0.4640632947160215,
+          "test_f1_weighted": 0.3489939882738993,
+          "test_logloss": 1.0397942602539363
+        },
+        {
+          "index": 4,
+          "train": {
+            "start": "20221001",
+            "end": "20230930",
+            "rows": 1213439
+          },
+          "val": {
+            "start": "20231001",
+            "end": "20231231",
+            "rows": 313300
+          },
+          "test": {
+            "start": "20240101",
+            "end": "20240131",
+            "rows": 115631
+          },
+          "best_iteration": 897,
+          "val_accuracy": 0.5557708266836897,
+          "val_f1_weighted": 0.4569058673525128,
+          "val_logloss": 0.9528792733605683,
+          "test_accuracy": 0.3264522489643781,
+          "test_f1_weighted": 0.25145066080087247,
+          "test_logloss": 1.3076265115945236
+        },
+        {
+          "index": 5,
+          "train": {
+            "start": "20230101",
+            "end": "20231231",
+            "rows": 1234459
+          },
+          "val": {
+            "start": "20240101",
+            "end": "20240331",
+            "rows": 305392
+          },
+          "test": {
+            "start": "20240401",
+            "end": "20240430",
+            "rows": 105617
+          },
+          "best_iteration": 51,
+          "val_accuracy": 0.3571475349714465,
+          "val_f1_weighted": 0.23608981518088443,
+          "val_logloss": 1.0896714470981115,
+          "test_accuracy": 0.3391310111061666,
+          "test_f1_weighted": 0.21263284534650642,
+          "test_logloss": 1.097056022435962
+        },
+        {
+          "index": 6,
+          "train": {
+            "start": "20230401",
+            "end": "20240331",
+            "rows": 1247012
+          },
+          "val": {
+            "start": "20240401",
+            "end": "20240630",
+            "rows": 311838
+          },
+          "test": {
+            "start": "20240701",
+            "end": "20240731",
+            "rows": 121810
+          },
+          "best_iteration": 233,
+          "val_accuracy": 0.44922684214239444,
+          "val_f1_weighted": 0.395758818440196,
+          "val_logloss": 1.049995741436686,
+          "test_accuracy": 0.465405139151137,
+          "test_f1_weighted": 0.3789251151767468,
+          "test_logloss": 1.0415745724591066
+        },
+        {
+          "index": 7,
+          "train": {
+            "start": "20230701",
+            "end": "20240630",
+            "rows": 1260797
+          },
+          "val": {
+            "start": "20240701",
+            "end": "20240930",
+            "rows": 339382
+          },
+          "test": {
+            "start": "20241001",
+            "end": "20241031",
+            "rows": 95674
+          },
+          "best_iteration": 134,
+          "val_accuracy": 0.4612354220318108,
+          "val_f1_weighted": 0.3685429527640145,
+          "val_logloss": 1.0603175657394739,
+          "test_accuracy": 0.37305851119426386,
+          "test_f1_weighted": 0.2925667232075749,
+          "test_logloss": 1.1025707127204163
+        },
+        {
+          "index": 8,
+          "train": {
+            "start": "20231001",
+            "end": "20240930",
+            "rows": 1269912
+          },
+          "val": {
+            "start": "20241001",
+            "end": "20241231",
+            "rows": 324817
+          },
+          "test": {
+            "start": "20250101",
+            "end": "20250131",
+            "rows": 96238
+          },
+          "best_iteration": 354,
+          "val_accuracy": 0.4225333033677425,
+          "val_f1_weighted": 0.355776443586546,
+          "val_logloss": 1.0656669351465757,
+          "test_accuracy": 0.4359504561607681,
+          "test_f1_weighted": 0.3883556071276727,
+          "test_logloss": 1.075748514167962
+        },
+        {
+          "index": 9,
+          "train": {
+            "start": "20240101",
+            "end": "20241231",
+            "rows": 1281429
+          },
+          "val": {
+            "start": "20250101",
+            "end": "20250331",
+            "rows": 305247
+          },
+          "test": {
+            "start": "20250401",
+            "end": "20250430",
+            "rows": 112793
+          },
+          "best_iteration": 253,
+          "val_accuracy": 0.46228464161809946,
+          "val_f1_weighted": 0.43305107450585334,
+          "val_logloss": 1.0497602317355856,
+          "test_accuracy": 0.4412596526380183,
+          "test_f1_weighted": 0.4335860102495487,
+          "test_logloss": 1.0516756984567748
+        },
+        {
+          "index": 10,
+          "train": {
+            "start": "20240401",
+            "end": "20250331",
+            "rows": 1281284
+          },
+          "val": {
+            "start": "20250401",
+            "end": "20250630",
+            "rows": 322760
+          },
+          "test": {
+            "start": "20250701",
+            "end": "20250731",
+            "rows": 124108
+          },
+          "best_iteration": 548,
+          "val_accuracy": 0.5140228033213533,
+          "val_f1_weighted": 0.47771638496032753,
+          "val_logloss": 0.9928789156225211,
+          "test_accuracy": 0.5720582073677765,
+          "test_f1_weighted": 0.5113010477233161,
+          "test_logloss": 0.9574633541167819
+        },
+        {
+          "index": 11,
+          "train": {
+            "start": "20240701",
+            "end": "20250630",
+            "rows": 1292206
+          },
+          "val": {
+            "start": "20250701",
+            "end": "20250930",
+            "rows": 356738
+          },
+          "test": {
+            "start": "20251001",
+            "end": "20251031",
+            "rows": 92022
+          },
+          "best_iteration": 379,
+          "val_accuracy": 0.5386390011717282,
+          "val_f1_weighted": 0.4678374671637825,
+          "val_logloss": 0.9806914560175649,
+          "test_accuracy": 0.5485536067462129,
+          "test_f1_weighted": 0.47420402974820214,
+          "test_logloss": 0.9569187566143221
+        },
+        {
+          "index": 12,
+          "train": {
+            "start": "20241001",
+            "end": "20250930",
+            "rows": 1309562
+          },
+          "val": {
+            "start": "20251001",
+            "end": "20251231",
+            "rows": 324677
+          },
+          "test": {
+            "start": "20260101",
+            "end": "20260131",
+            "rows": 108216
+          },
+          "best_iteration": 323,
+          "val_accuracy": 0.5332438084619483,
+          "val_f1_weighted": 0.43661928086934315,
+          "val_logloss": 0.9784854642744207,
+          "test_accuracy": 0.49377171582760404,
+          "test_f1_weighted": 0.41030397170810734,
+          "test_logloss": 1.0080835833979656
+        }
+      ]
+    }
+  },
+  "feature_list_hash": "492f96beebc5f5cd4036fcbc8fb25f416d5437e098d712f3c1c9d46b5fc5bf83"
+}

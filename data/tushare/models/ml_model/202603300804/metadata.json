@@ -1,0 +1,244 @@
+{
+  "model_name": "ml_model",
+  "version": "202603300804",
+  "saved_at": "2026-03-30T08:04:50.870596",
+  "model_type": "xgboost",
+  "actual_model_type": "xgboost",
+  "model_file": "model_weights.pkl",
+  "feature_names": [
+    "close",
+    "volume",
+    "amount",
+    "return_1d",
+    "return_5d",
+    "ma_5",
+    "ma_10",
+    "ma_20",
+    "ma_60",
+    "ma_bias_5",
+    "ma_bias_10",
+    "ma_bias_20",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_hist",
+    "atr_14",
+    "obv",
+    "pe",
+    "pb"
+  ],
+  "feature_count": 20,
+  "training_metrics": {
+    "val_accuracy": 0.4097472866685993,
+    "val_f1_weighted": 0.3771044672450176,
+    "val_logloss": 1.0717910569342741,
+    "test_accuracy": 0.4063102931062158,
+    "test_f1_weighted": 0.3365806761426608,
+    "test_logloss": 1.077421666672008
+  },
+  "config": {
+    "data": {
+      "data_sources": {
+        "market": "tushare",
+        "fundamental": "tushare",
+        "alternative": "tushare"
+      },
+      "storage_format": "parquet",
+      "partition_by_date": true,
+      "enable_data_lineage": true,
+      "enable_version_control": true,
+      "check_missing_values": true,
+      "check_price_anomalies": true,
+      "check_timestamp_alignment": true,
+      "raw_data_dir": "data/tushare/raw",
+      "processed_data_dir": "data/tushare/processed",
+      "feature_data_dir": "data/tushare/features"
+    },
+    "feature": {
+      "technical_indicators": [
+        "sma",
+        "ema",
+        "rsi",
+        "macd",
+        "bollinger_bands",
+        "atr"
+      ],
+      "statistical_features": [
+        "returns_skewness",
+        "returns_kurtosis",
+        "volatility_cluster",
+        "price_momentum_1m",
+        "price_momentum_3m",
+        "price_momentum_6m",
+        "price_momentum_12m"
+      ],
+      "microstructure_features": [
+        "bid_ask_spread",
+        "order_imbalance",
+        "illiquidity_ratio"
+      ],
+      "macro_features": [
+        "term_spread",
+        "credit_spread",
+        "vix_index",
+        "exchange_rate"
+      ],
+      "avoid_lookahead_bias": true,
+      "check_feature_stability": true,
+      "enable_neutralization": true,
+      "neutralize_by": [
+        "market_cap",
+        "industry"
+      ]
+    },
+    "label": {
+      "task_type": "classification",
+      "classification_type": "binary",
+      "binary_threshold": 0.0,
+      "ternary_thresholds": {
+        "up": 0.02,
+        "down": -0.02
+      },
+      "regression_target": "log_return",
+      "prediction_horizon": 5,
+      "ranking_method": "cross_section",
+      "use_close_to_close": true,
+      "consider_transaction_cost": true,
+      "transaction_cost_rate": 0.001
+    },
+    "split": {
+      "train_ratio": 0.7,
+      "val_ratio": 0.15,
+      "test_ratio": 0.15,
+      "split_strategy": "temporal",
+      "use_time_series_cv": true,
+      "cv_window_size": 252,
+      "cv_step_size": 21,
+      "enable_oot": true,
+      "oot_months": 6
+    },
+    "model": {
+      "model_type": "xgboost",
+      "loss_function": "weighted_cross_entropy",
+      "metrics": [
+        "ic",
+        "rank_ic",
+        "annual_return",
+        "max_drawdown",
+        "sharpe_ratio"
+      ],
+      "enable_time_decay": true,
+      "decay_factor": 0.995,
+      "enable_market_cap_weighting": true,
+      "dropout_rate": 0.3,
+      "l2_regularization": 0.0001,
+      "enable_feature_selection": true,
+      "feature_selection_method": "l1"
+    },
+    "training": {
+      "optimization_method": "bayesian",
+      "n_trials": 100,
+      "early_stopping_patience": 15,
+      "n_estimators": 1000,
+      "max_depth": 6,
+      "learning_rate": 0.01,
+      "min_child_weight": 1.0,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "enable_early_stopping": true,
+      "monitor_metric": "val_ic",
+      "patience": 20,
+      "min_delta": 0.001,
+      "save_best_model": true,
+      "enable_model_ema": true,
+      "ema_decay": 0.999
+    },
+    "model_management": {
+      "use_semantic_versioning": true,
+      "version_format": "MAJOR.MINOR.PATCH",
+      "enable_model_registry": true,
+      "enable_model_card": true,
+      "production_ready_threshold": 0.03,
+      "enable_shadow_mode": false,
+      "shadow_traffic_ratio": 0.1,
+      "models_dir": "data/tushare/models",
+      "enable_hot_swap": true,
+      "enable_ab_testing": true
+    },
+    "prediction": {
+      "input_format": "json",
+      "output_format": "json",
+      "enable_missing_value_handling": true,
+      "missing_value_strategy": "fill_with_mean",
+      "enable_data_delay_check": true,
+      "max_delay_seconds": 300,
+      "enable_drift_detection": true,
+      "drift_threshold": 0.1,
+      "enable_outlier_detection": true,
+      "outlier_threshold": 0.2,
+      "enable_api_key_auth": true,
+      "rate_limit_per_minute": 1000,
+      "enable_batch_prediction": true,
+      "enable_websocket": false
+    },
+    "risk_control": {
+      "ensure_no_data_leakage": true,
+      "ensure_temporal_ordering": true,
+      "ensure_no_future_info": true,
+      "retrain_frequency": "monthly",
+      "detect_non_stationarity": true,
+      "max_train_val_ic_gap": 0.02,
+      "enable_cross_validation": true,
+      "consider_slippage": true,
+      "slippage_rate": 0.001,
+      "consider_transaction_cost": true,
+      "handle_limit_up_down": true,
+      "handle_suspension": true
+    }
+  },
+  "production_ready": true,
+  "metadata": {
+    "task_type": "classification",
+    "actual_model_type": "xgboost",
+    "trainer_name": "xgboost_classifier",
+    "n_classes": 3,
+    "classes": [
+      0,
+      1,
+      2
+    ],
+    "best_iteration": 425,
+    "best_score": 1.071791056903321,
+    "model_params": {
+      "n_estimators": 1000,
+      "max_depth": 6,
+      "learning_rate": 0.01,
+      "min_child_weight": 1.0,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "early_stopping_rounds": 20
+    },
+    "train_rows": 3658368,
+    "val_rows": 627826,
+    "test_rows": 940717,
+    "split": {
+      "train": [
+        "20220101",
+        "20241231"
+      ],
+      "val": [
+        "20250101",
+        "20250630"
+      ],
+      "test": [
+        "20250701",
+        "20260326"
+      ]
+    },
+    "window": {
+      "start": "20220101",
+      "end": "20260326"
+    }
+  },
+  "feature_list_hash": "93f501bbeef5d6eb2076092f4aa8d0ab5df0db22e10827ae67773e6201b23bec"
+}

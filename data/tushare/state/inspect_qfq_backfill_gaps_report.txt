@@ -1,0 +1,26 @@
+全市场股票数: 5494
+数据库有区间记录股票数: 5493
+完全没有记录的股票数: 1
+有记录但新字段完整行数为0的股票数: 103
+前20只无记录股票: ['920188.BJ']
+前20只有记录但未形成完整新字段行的股票:
+{'symbol': '920002.BJ', 'total_rows': 443, 'min_date': '20240530', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920003.BJ', 'total_rows': 93, 'min_date': '20251107', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920005.BJ', 'total_rows': 158, 'min_date': '20250731', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920007.BJ', 'total_rows': 152, 'min_date': '20250808', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920008.BJ', 'total_rows': 379, 'min_date': '20240829', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920009.BJ', 'total_rows': 97, 'min_date': '20251103', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920015.BJ', 'total_rows': 118, 'min_date': '20250925', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920016.BJ', 'total_rows': 368, 'min_date': '20240913', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920018.BJ', 'total_rows': 144, 'min_date': '20250820', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920019.BJ', 'total_rows': 355, 'min_date': '20241011', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920020.BJ', 'total_rows': 101, 'min_date': '20251028', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920022.BJ', 'total_rows': 122, 'min_date': '20250919', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920026.BJ', 'total_rows': 591, 'min_date': '20231019', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920027.BJ', 'total_rows': 195, 'min_date': '20250610', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920028.BJ', 'total_rows': 6, 'min_date': '20260320', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920029.BJ', 'total_rows': 242, 'min_date': '20250328', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920035.BJ', 'total_rows': 76, 'min_date': '20251202', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920036.BJ', 'total_rows': 15, 'min_date': '20260309', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920037.BJ', 'total_rows': 183, 'min_date': '20250626', 'max_date': '20260327', 'complete_rows': 0}
+{'symbol': '920045.BJ', 'total_rows': 55, 'min_date': '20251231', 'max_date': '20260327', 'complete_rows': 0}

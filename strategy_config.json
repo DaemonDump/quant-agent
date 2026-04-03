@@ -1,0 +1,79 @@
+{
+  "strategy_type": "ml_model",
+  "factor_weights": {
+    "valuation": 0.3333333333333333,
+    "trend": 0.3333333333333333,
+    "fund": 0.3333333333333333
+  },
+  "signal_thresholds": {
+    "buy_score": 6,
+    "sell_score": 1,
+    "buy_prob": 0.6,
+    "sell_prob": 0.6
+  },
+  "position_limits": {
+    "single_max": 0.1,
+    "total_max": 0.8,
+    "daily_trades": 10,
+    "weekly_trades": 50,
+    "symbol_daily_trades": 2
+  },
+  "targets": {
+    "annual_return": 0.2,
+    "max_drawdown": 0.1,
+    "single_loss": 0.05,
+    "daily_loss": 0.02
+  },
+  "scope": {
+    "market": "A股",
+    "symbols": [
+      "沪深300成分股",
+      "ETF"
+    ],
+    "timeframe": [
+      "分钟级",
+      "日线级"
+    ],
+    "market_environment": [
+      "牛市",
+      "震荡市",
+      "熊市"
+    ]
+  },
+  "ml_model": {
+    "status": "ready",
+    "last_trained_at": "2026-03-30 19:25",
+    "model_path": "data\\tushare\\models\\ml_model\\202603301925\\model_weights.pkl",
+    "actual_model_type": "xgboost",
+    "trainer_name": "xgboost_classifier",
+    "model_file": "model_weights.pkl"
+  },
+  "trend_following_params": {
+    "short_ma": 10,
+    "long_ma": 30,
+    "breakout_window": 20,
+    "confirm_days": 1
+  },
+  "mean_reversion_params": {
+    "lookback": 20,
+    "entry_z": 2,
+    "exit_z": 0.5,
+    "max_holding_days": 20
+  },
+  "risk_preference": 1.0,
+  "market_filter": {
+    "enabled": true,
+    "index_code": "000300.SH",
+    "ma_period": 20,
+    "below_ma_cap": 0.5,
+    "far_below_ma_cap": 0.2,
+    "far_below_pct": -0.05
+  },
+  "volatility_penalty": {
+    "enabled": true,
+    "atr_threshold_mid": 0.025,
+    "atr_threshold_high": 0.035,
+    "penalty_mid": 0.7,
+    "penalty_high": 0.4
+  }
+}

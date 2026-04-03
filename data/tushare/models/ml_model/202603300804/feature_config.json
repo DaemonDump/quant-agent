@@ -1,0 +1,59 @@
+{
+  "feature_names": [
+    "close",
+    "volume",
+    "amount",
+    "return_1d",
+    "return_5d",
+    "ma_5",
+    "ma_10",
+    "ma_20",
+    "ma_60",
+    "ma_bias_5",
+    "ma_bias_10",
+    "ma_bias_20",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_hist",
+    "atr_14",
+    "obv",
+    "pe",
+    "pb"
+  ],
+  "feature_count": 20,
+  "saved_at": "2026-03-30T08:04:50.868327",
+  "feature_list_hash": "93f501bbeef5d6eb2076092f4aa8d0ab5df0db22e10827ae67773e6201b23bec",
+  "feature_spec": {
+    "version": "20260327",
+    "features": [
+      "close",
+      "volume",
+      "amount",
+      "return_1d",
+      "return_5d",
+      "ma_5",
+      "ma_10",
+      "ma_20",
+      "ma_60",
+      "ma_bias_5",
+      "ma_bias_10",
+      "ma_bias_20",
+      "rsi_14",
+      "macd",
+      "macd_signal",
+      "macd_hist",
+      "atr_14",
+      "obv",
+      "pe",
+      "pb"
+    ],
+    "label": {
+      "horizon_days": 5,
+      "up_threshold": 0.02,
+      "down_threshold": -0.02,
+      "label_class_name": "label_5d_class",
+      "label_return_name": "label_5d_return"
+    }
+  }
+}

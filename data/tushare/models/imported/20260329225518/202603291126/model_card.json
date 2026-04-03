@@ -1,0 +1,38 @@
+{
+  "model_card_version": "1.0",
+  "model_details": {
+    "name": "ml_model",
+    "version": "202603291126",
+    "type": "xgboost",
+    "description": "xgboost model for quantitative trading"
+  },
+  "intended_use": {
+    "primary_use": "Stock price prediction and trading signal generation",
+    "primary_users": "Quantitative traders and investment firms",
+    "out_of_scope": "Not suitable for long-term investment decisions"
+  },
+  "training_data": {
+    "data_source": "Tushare",
+    "time_period": "Historical market data",
+    "feature_count": 20,
+    "sample_size": "Large-scale historical data"
+  },
+  "performance_metrics": {
+    "val_accuracy": 0.36990025898895557,
+    "val_f1_weighted": 0.3157189285301677,
+    "val_logloss": 1.0944437999351497,
+    "test_accuracy": 0.393079959222593,
+    "test_f1_weighted": 0.32077984137170623,
+    "test_logloss": 1.0967202729293994
+  },
+  "limitations": {
+    "market_conditions": "Performance may vary in different market regimes",
+    "data_quality": "Dependent on data quality and availability",
+    "overfitting_risk": "Regular monitoring required to detect performance degradation"
+  },
+  "ethical_considerations": {
+    "fairness": "Model should be regularly audited for bias",
+    "transparency": "Feature importance analysis should be provided"
+  },
+  "created_at": "2026-03-29T11:26:39.848669"
+}

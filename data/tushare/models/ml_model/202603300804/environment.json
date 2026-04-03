@@ -1,0 +1,10 @@
+{
+  "python_version": "3.13.3",
+  "libraries": {
+    "pandas": "2.3.3",
+    "numpy": "2.4.2",
+    "sklearn": "1.8.0",
+    "xgboost": "2.1.4"
+  },
+  "random_seed": 42
+}

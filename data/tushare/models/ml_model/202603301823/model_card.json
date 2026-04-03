@@ -1,0 +1,42 @@
+{
+  "model_card_version": "1.0",
+  "model_details": {
+    "name": "ml_model",
+    "version": "202603301823",
+    "type": "xgboost",
+    "description": "xgboost model for quantitative trading"
+  },
+  "intended_use": {
+    "primary_use": "Stock price prediction and trading signal generation",
+    "primary_users": "Quantitative traders and investment firms",
+    "out_of_scope": "Not suitable for long-term investment decisions"
+  },
+  "training_data": {
+    "data_source": "Tushare",
+    "time_period": "Historical market data",
+    "feature_count": 34,
+    "sample_size": "Large-scale historical data"
+  },
+  "performance_metrics": {
+    "val_accuracy": 0.4284288693070344,
+    "val_f1_weighted": 0.40909510281460026,
+    "val_logloss": 1.0595514380244604,
+    "test_accuracy": 0.40609521697346046,
+    "test_f1_weighted": 0.3890910211801748,
+    "test_logloss": 1.0608524240035728,
+    "wf_window_count": 12,
+    "wf_test_accuracy_mean": 0.39282727403102974,
+    "wf_test_f1_weighted_mean": 0.3698052024489484,
+    "wf_test_logloss_mean": 1.0898717733647596
+  },
+  "limitations": {
+    "market_conditions": "Performance may vary in different market regimes",
+    "data_quality": "Dependent on data quality and availability",
+    "overfitting_risk": "Regular monitoring required to detect performance degradation"
+  },
+  "ethical_considerations": {
+    "fairness": "Model should be regularly audited for bias",
+    "transparency": "Feature importance analysis should be provided"
+  },
+  "created_at": "2026-03-30T18:23:44.079227"
+}
