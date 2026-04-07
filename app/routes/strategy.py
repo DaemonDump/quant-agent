@@ -37,7 +37,10 @@ def _calc_suggested_trade(symbol: str, final_target_position: float, hist_df) ->
     计算建议买卖数量（与回测引擎规则完全一致：整手100股、含滑点/佣金/印花税）。
     """
     try:
-        current_price = float(hist_df['close_price'].iloc[-1])
+        if 'close_price' in hist_df.columns:
+            current_price = float(hist_df['close_price'].iloc[-1])
+        else:
+            current_price = float(hist_df['close'].iloc[-1])
     except Exception:
         return {'action': 'hold', 'reason': '无法获取当前价格'}
 
@@ -361,11 +364,11 @@ def get_stock_data(symbol, limit=1000):
     """获取股票数据，如果数据库没有则从 Tushare 抓取"""
     symbol = symbol.upper()
     db = get_db()
-    # 尝试从数据库读取
     query = '''
-        SELECT trade_date, open_price as open, high_price as high, 
-               low_price as low, close_price as close, volume, amount,
-               pe, pb
+        SELECT trade_date,
+               open_price, high_price, low_price, close_price,
+               open_price as open, high_price as high, low_price as low, close_price as close,
+               volume, amount, pe, pb, turnover_rate, total_mv, buy_lg_amount, net_mf_amount, net_amount_rate
         FROM stock_history_data
         WHERE symbol = ?
         ORDER BY trade_date DESC
@@ -373,7 +376,7 @@ def get_stock_data(symbol, limit=1000):
     '''
     df = pd.read_sql_query(query, db, params=(symbol, limit))
     
-    if len(df) < 20: # 如果数据太少（少于20条无法计算MA等因子）
+    if len(df) < 20:
         token = get_setting('tushare_token')
         if not token:
             return pd.DataFrame()
@@ -381,16 +384,95 @@ def get_stock_data(symbol, limit=1000):
         collector = RealTimeDataCollector(current_app.config['DATABASE'])
         collector.set_token(token)
         
-        # 为了兼容测试环境日期可能超出实际行情日期的问题，统一获取过去5年的数据，确保有数据
         end_date = datetime.now().strftime('%Y%m%d')
         start_date = (datetime.now() - timedelta(days=365*5)).strftime('%Y%m%d')
         
         df_new = collector.collect_history_data(symbol, start_date, end_date)
         if df_new is not None and not df_new.empty:
-            # 重新从数据库读取格式化好的数据
             df = pd.read_sql_query(query, db, params=(symbol, limit))
             
     return df
+
+
+def get_stock_data_range(symbol, start_date=None, end_date=None, lookback_extra=120):
+    """按日期范围获取股票数据，并在 start_date 前额外补充 lookback_extra 条用于因子计算"""
+    symbol = symbol.upper()
+    db = get_db()
+
+    def _norm(d):
+        if not d:
+            return None
+        return d.replace('-', '')
+
+    start_str = _norm(start_date)
+    end_str = _norm(end_date) or datetime.now().strftime('%Y%m%d')
+
+    if start_str:
+        query_main = '''
+            SELECT trade_date,
+                   open_price, high_price, low_price, close_price,
+                   open_price as open, high_price as high, low_price as low, close_price as close,
+                   volume, amount, pe, pb, turnover_rate, total_mv, buy_lg_amount, net_mf_amount, net_amount_rate
+            FROM stock_history_data
+            WHERE symbol = ? AND trade_date >= ? AND trade_date <= ?
+            ORDER BY trade_date ASC
+        '''
+        query_pre = '''
+            SELECT trade_date,
+                   open_price, high_price, low_price, close_price,
+                   open_price as open, high_price as high, low_price as low, close_price as close,
+                   volume, amount, pe, pb, turnover_rate, total_mv, buy_lg_amount, net_mf_amount, net_amount_rate
+            FROM stock_history_data
+            WHERE symbol = ? AND trade_date < ?
+            ORDER BY trade_date DESC
+            LIMIT ?
+        '''
+        df_main = pd.read_sql_query(query_main, db, params=(symbol, start_str, end_str))
+        df_pre = pd.read_sql_query(query_pre, db, params=(symbol, start_str, int(lookback_extra)))
+        if not df_pre.empty:
+            df_pre = df_pre.sort_values('trade_date', ascending=True)
+        df = pd.concat([df_pre, df_main], ignore_index=True) if not df_pre.empty else df_main
+        eval_dates = df_main['trade_date'].astype(str).tolist() if not df_main.empty else []
+    else:
+        query_all = '''
+            SELECT trade_date,
+                   open_price, high_price, low_price, close_price,
+                   open_price as open, high_price as high, low_price as low, close_price as close,
+                   volume, amount, pe, pb, turnover_rate, total_mv, buy_lg_amount, net_mf_amount, net_amount_rate
+            FROM stock_history_data
+            WHERE symbol = ? AND trade_date <= ?
+            ORDER BY trade_date ASC
+        '''
+        df = pd.read_sql_query(query_all, db, params=(symbol, end_str))
+        eval_dates = df['trade_date'].astype(str).tolist() if not df.empty else []
+
+    if df.empty or len(df) < 20:
+        token = get_setting('tushare_token')
+        if token:
+            collector = RealTimeDataCollector(current_app.config['DATABASE'])
+            collector.set_token(token)
+            fetch_end = end_str
+            fetch_start = (datetime.now() - timedelta(days=365 * 5)).strftime('%Y%m%d')
+            df_new = collector.collect_history_data(symbol, fetch_start, fetch_end)
+            if df_new is not None and not df_new.empty:
+                if start_str:
+                    df_main = pd.read_sql_query(query_main, db, params=(symbol, start_str, end_str))
+                    df_pre = pd.read_sql_query(query_pre, db, params=(symbol, start_str, int(lookback_extra)))
+                    if not df_pre.empty:
+                        df_pre = df_pre.sort_values('trade_date', ascending=True)
+                    df = pd.concat([df_pre, df_main], ignore_index=True) if not df_pre.empty else df_main
+                    eval_dates = df_main['trade_date'].astype(str).tolist() if not df_main.empty else []
+                else:
+                    df = pd.read_sql_query(query_all, db, params=(symbol, end_str))
+                    eval_dates = df['trade_date'].astype(str).tolist() if not df.empty else []
+
+    if df.empty:
+        return df, []
+
+    df['trade_date'] = df['trade_date'].astype(str)
+    df = df.sort_values('trade_date').reset_index(drop=True)
+
+    return df, eval_dates
 
 @strategy_bp.route('/api/factor/calculate', methods=['POST'])
 def calculate_factors():
@@ -597,3 +679,115 @@ def check_sell_trigger():
         })
     except Exception as e:
         return jsonify({'error': str(e), 'message': '卖出触发检查失败'}), 500
+
+
+@strategy_bp.route('/api/signal/history', methods=['POST'])
+def signal_history():
+    try:
+        data = request.json
+        symbol = data.get('symbol')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        if not symbol:
+            return jsonify({'error': '参数错误', 'message': '缺少股票代码'}), 400
+        if not start_date:
+            return jsonify({'error': '参数错误', 'message': '缺少起始日期'}), 400
+
+        config = StrategyConfig()
+        cfg_dict = config.get_config() or {}
+        factor_weights = config.get_factor_weights()
+        signal_thresholds = config.get_signal_thresholds()
+        position_limits = cfg_dict.get('position_limits') or {}
+        single_position_limit = float(position_limits.get('single_max') or 0.2)
+
+        risk_preference = data.get('risk_preference', config.get_risk_preference())
+        try:
+            risk_preference = max(0.0, min(1.0, float(risk_preference)))
+        except Exception:
+            risk_preference = 0.5
+
+        df, eval_dates = get_stock_data_range(symbol, start_date=start_date, end_date=end_date)
+        if df.empty or not eval_dates:
+            return jsonify({'error': '数据不足', 'message': '该股票在指定日期范围内无数据'}), 400
+
+        model, feature_stats, feature_names, calibrator, runtime_info = None, None, None, None, {}
+        if cfg_dict.get('strategy_type') == 'ml_model':
+            model, feature_stats, feature_names, calibrator, runtime_info = _load_ml_runtime(cfg_dict)
+
+        calculator = FactorCalculator(factor_weights)
+        generator = SignalGenerator(signal_thresholds)
+
+        results = []
+        df_sorted = df.sort_values('trade_date').reset_index(drop=True)
+        date_to_idx = {d: i for i, d in enumerate(df_sorted['trade_date'].astype(str).tolist())}
+        lookback_window = 200
+
+        for trade_date in eval_dates:
+            row_idx = date_to_idx.get(str(trade_date))
+            if row_idx is None:
+                continue
+            if row_idx < 1:
+                continue
+
+            slice_start = max(0, row_idx - lookback_window)
+            df_slice = df_sorted.iloc[slice_start:row_idx + 1]
+
+            factors = calculator.calculate_all_factors(df_slice)
+            if factors is None:
+                continue
+
+            ml_pred = None
+            if model is not None:
+                ml_pred = _make_ml_prediction(df_slice, model, feature_stats, feature_names, calibrator)
+
+            signal = generator.generate_signal(factors, ml_pred)
+
+            if ml_pred is not None:
+                signal['ml_buy_prob'] = round(float(ml_pred.get('buy_prob', 0.5) or 0.5), 4)
+                signal['ml_sell_prob'] = round(float(ml_pred.get('sell_prob', 0.5) or 0.5), 4)
+                signal['ml_neutral_prob'] = round(float(ml_pred.get('neutral_prob', 0.0) or 0.0), 4)
+
+            if cfg_dict.get('strategy_type') == 'ml_model':
+                signal['target_position'] = _derive_ml_target_position(
+                    signal, ml_pred, signal_thresholds, risk_preference,
+                    hist_df=df_slice, cfg_dict=cfg_dict
+                )
+
+            target_pos = float(signal.get('target_position') or 0.0)
+            final_target_position = min(target_pos, single_position_limit)
+            signal['final_target_position'] = round(final_target_position, 4)
+
+            row = df_sorted.iloc[row_idx]
+            if row_idx + 1 < len(df_sorted):
+                next_row = df_sorted.iloc[row_idx + 1]
+                next_open = round(float(next_row['open']), 4)
+                next_close = round(float(next_row['close']), 4)
+            else:
+                next_open = None
+                next_close = None
+
+            results.append({
+                'date': trade_date,
+                'close': round(float(row['close']), 4),
+                'signal': signal.get('signal'),
+                'total_score': round(float(signal.get('total_score') or 0), 4),
+                'confidence': round(float(signal.get('confidence') or 0), 4),
+                'ml_buy_prob': signal.get('ml_buy_prob'),
+                'ml_sell_prob': signal.get('ml_sell_prob'),
+                'final_target_position': signal.get('final_target_position'),
+                'reason': signal.get('reason', ''),
+                'next_open': next_open,
+                'next_close': next_close,
+            })
+
+        return jsonify({
+            'success': True,
+            'symbol': symbol.upper(),
+            'start_date': start_date,
+            'end_date': end_date or datetime.now().strftime('%Y-%m-%d'),
+            'risk_preference': risk_preference,
+            'count': len(results),
+            'rows': results,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': '历史信号分析失败'}), 500

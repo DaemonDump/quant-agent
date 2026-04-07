@@ -1293,6 +1293,95 @@
                         </div>
                     </div>
 
+                    <!-- 历史信号分析 -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="mb-0">📅 [[ tt('历史信号回放', 'Historical Signal Replay') ]]</h6>
+                                    <div class="text-muted small mt-1">[[ tt('选择起始日期，逐日生成信号并展示次日开盘/收盘价，用于验证策略在样本外的表现。', 'Select a start date to replay daily signals and show next-day open/close for out-of-sample validation.') ]]</div>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" v-if="historicalSignals.rows.length > 0" @click="exportHistoricalSignalsCsv">[[ tt('导出 CSV', 'Export CSV') ]]</button>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label small">[[ tt('起始日期', 'Start Date') ]]</label>
+                                    <input type="date" class="form-control form-control-sm" v-model="historicalSignals.startDate">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">[[ tt('结束日期（留空=今天）', 'End Date (blank = today)') ]]</label>
+                                    <input type="date" class="form-control form-control-sm" v-model="historicalSignals.endDate">
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button class="btn btn-primary btn-sm w-100" @click="runHistoricalSignalAnalysis" :disabled="historicalSignals.loading">
+                                        <span v-if="historicalSignals.loading" class="spinner-border spinner-border-sm me-1"></span>
+                                        [[ historicalSignals.loading ? tt('分析中…', 'Analyzing…') : tt('开始分析', 'Analyze') ]]
+                                    </button>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <div class="text-muted small" v-if="historicalSignals.rows.length > 0">
+                                        [[ tt('共', 'Total') ]] <strong>[[ historicalSignals.rows.length ]]</strong> [[ tt('个交易日', 'trading days') ]]
+                                        &nbsp;·&nbsp;
+                                        <span class="text-success">[[ tt('买入', 'Buy') ]] [[ historicalSignalStats.buy ]]</span>
+                                        &nbsp;/&nbsp;
+                                        <span class="text-danger">[[ tt('卖出', 'Sell') ]] [[ historicalSignalStats.sell ]]</span>
+                                        &nbsp;/&nbsp;
+                                        <span class="text-secondary">[[ tt('持仓/空仓', 'Hold') ]] [[ historicalSignalStats.hold ]]</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="historicalSignals.error" class="alert alert-danger py-2 small mb-3">[[ historicalSignals.error ]]</div>
+                            <div v-if="historicalSignals.rows.length > 0" style="max-height:420px;overflow-y:auto;">
+                                <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>[[ tt('日期', 'Date') ]]</th>
+                                            <th>[[ tt('收盘价', 'Close') ]]</th>
+                                            <th>[[ tt('信号', 'Signal') ]]</th>
+                                            <th>[[ tt('综合评分', 'Score') ]]</th>
+                                            <th v-if="historicalSignals.hasMl">[[ tt('买入概率', 'Buy Prob') ]]</th>
+                                            <th v-if="historicalSignals.hasMl">[[ tt('卖出概率', 'Sell Prob') ]]</th>
+                                            <th>[[ tt('目标仓位', 'Target Pos') ]]</th>
+                                            <th>[[ tt('次日开盘', 'Next Open') ]]</th>
+                                            <th>[[ tt('次日收盘', 'Next Close') ]]</th>
+                                            <th>[[ tt('次日涨跌', 'Next Chg') ]]</th>
+                                            <th>[[ tt('决策依据', 'Reason') ]]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="row in historicalSignals.rows" :key="row.date"
+                                            :class="row.signal==='buy' ? 'table-success' : row.signal==='sell' ? 'table-danger' : ''">
+                                            <td class="text-nowrap">[[ row.date ]]</td>
+                                            <td>[[ row.close ]]</td>
+                                            <td>
+                                                <span :class="row.signal==='buy' ? 'badge bg-success' : row.signal==='sell' ? 'badge bg-danger' : 'badge bg-secondary'">
+                                                    [[ row.signal==='buy' ? tt('买入','Buy') : row.signal==='sell' ? tt('卖出','Sell') : tt('持仓/空仓','Hold') ]]
+                                                </span>
+                                            </td>
+                                            <td>[[ row.total_score ]]</td>
+                                            <td v-if="historicalSignals.hasMl">[[ row.ml_buy_prob != null ? (row.ml_buy_prob*100).toFixed(1)+'%' : '-' ]]</td>
+                                            <td v-if="historicalSignals.hasMl">[[ row.ml_sell_prob != null ? (row.ml_sell_prob*100).toFixed(1)+'%' : '-' ]]</td>
+                                            <td>[[ row.final_target_position != null ? (row.final_target_position*100).toFixed(1)+'%' : '-' ]]</td>
+                                            <td>[[ row.next_open != null ? row.next_open : '-' ]]</td>
+                                            <td>[[ row.next_close != null ? row.next_close : '-' ]]</td>
+                                            <td>
+                                                <span v-if="row.next_close != null && row.next_open != null"
+                                                    :class="row.next_close >= row.next_open ? 'text-success' : 'text-danger'">
+                                                    [[ ((row.next_close - row.next_open) / row.next_open * 100).toFixed(2) ]]%
+                                                </span>
+                                                <span v-else class="text-muted">-</span>
+                                            </td>
+                                            <td class="text-muted" style="max-width:200px;white-space:normal;">[[ row.reason ]]</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div v-else-if="!historicalSignals.loading" class="text-center py-4 text-muted small">
+                                [[ tt('选择起始日期后点击"开始分析"，将逐日回放信号', 'Select a start date and click "Analyze" to replay signals day by day') ]]
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 错误信息展示区域 (合并为一个方框) -->
                     <div class="signal-error-box" v-if="signalErrors.length > 0">
                         <div class="signal-error-header">
@@ -2358,12 +2447,33 @@
                     backtestSearchTimeout: null,
                     positionSearchTimeout: null,
                     signalErrors: [],
+                    historicalSignals: {
+                        startDate: '',
+                        endDate: '',
+                        loading: false,
+                        error: '',
+                        hasMl: false,
+                        rows: [],
+                    },
                     tooltipInstances: []
                 }
             },
             computed: {
                 positionsValue() {
                     return this.positions.reduce((sum, pos) => sum + pos.market_value, 0);
+                },
+                historicalSignalStats() {
+                    const rows = this.historicalSignals?.rows || [];
+                    let buy = 0;
+                    let sell = 0;
+                    let hold = 0;
+                    for (const r of rows) {
+                        if (!r || !r.signal) continue;
+                        if (r.signal === 'buy') buy += 1;
+                        else if (r.signal === 'sell') sell += 1;
+                        else hold += 1;
+                    }
+                    return { total: rows.length, buy, sell, hold };
                 },
                 singleMaxPercent: {
                     get() {
@@ -3248,8 +3358,75 @@
                         this.signalErrors.push(this.tt('检查卖出触发失败: ', 'Sell trigger check failed: ') + (error.response?.data?.message || error.message));
                     }
                 },
+                async runHistoricalSignalAnalysis() {
+                    const symbol = this.signalSymbol || this.strategySignal.symbol;
+                    if (!symbol) {
+                        this.historicalSignals.error = this.tt('请先在上方输入股票代码', 'Please enter a stock code above first.');
+                        return;
+                    }
+                    if (!this.historicalSignals.startDate) {
+                        this.historicalSignals.error = this.tt('请选择起始日期', 'Please select a start date.');
+                        return;
+                    }
+                    this.historicalSignals.loading = true;
+                    this.historicalSignals.error = '';
+                    this.historicalSignals.rows = [];
+                    this.historicalSignals.hasMl = false;
+                    try {
+                        const resp = await axios.post('/api/signal/history', {
+                            symbol: symbol,
+                            start_date: this.historicalSignals.startDate,
+                            end_date: this.historicalSignals.endDate || null,
+                            risk_preference: this.riskPreference,
+                        });
+                        if (resp.data.success) {
+                            this.historicalSignals.rows = resp.data.rows || [];
+                            this.historicalSignals.hasMl = this.historicalSignals.rows.some(r => r?.ml_buy_prob != null || r?.ml_sell_prob != null);
+                            if (this.historicalSignals.rows.length === 0) {
+                                this.historicalSignals.error = this.tt('该日期范围内无数据', 'No data in the selected date range.');
+                            }
+                        } else {
+                            this.historicalSignals.error = resp.data.message || this.tt('分析失败', 'Analysis failed.');
+                        }
+                    } catch (err) {
+                        this.historicalSignals.error = err.response?.data?.message || err.message;
+                    } finally {
+                        this.historicalSignals.loading = false;
+                    }
+                },
+                exportHistoricalSignalsCsv() {
+                    if (!this.historicalSignals.rows.length) return;
+                    const hasMl = !!this.historicalSignals.hasMl;
+                    const headers = ['日期', '收盘价', '信号', '综合评分', '置信度',
+                        ...(hasMl ? ['买入概率', '卖出概率'] : []),
+                        '目标仓位', '次日开盘', '次日收盘', '次日涨跌%', '决策依据'];
+                    const rows = this.historicalSignals.rows.map(r => {
+                        const chg = (r.next_close != null && r.next_open != null)
+                            ? ((r.next_close - r.next_open) / r.next_open * 100).toFixed(2)
+                            : '';
+                        return [
+                            r.date, r.close, r.signal, r.total_score, r.confidence,
+                            ...(hasMl ? [
+                                r.ml_buy_prob != null ? (r.ml_buy_prob * 100).toFixed(1) : '',
+                                r.ml_sell_prob != null ? (r.ml_sell_prob * 100).toFixed(1) : '',
+                            ] : []),
+                            r.final_target_position != null ? (r.final_target_position * 100).toFixed(1) : '',
+                            r.next_open ?? '', r.next_close ?? '', chg,
+                            `"${(r.reason || '').replace(/"/g, '""')}"`,
+                        ];
+                    });
+                    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+                    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const sym = this.signalSymbol || this.strategySignal.symbol || 'signal';
+                    a.download = `historical_signals_${sym}_${this.historicalSignals.startDate}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                },
                 async runFullAnalysis() {
-                    this.signalErrors = []; // 开始前清空旧错误
+                    this.signalErrors = [];
                     if (!this.signalSymbol) {
                         this.signalErrors.push(this.tt('请输入股票代码', 'Please enter a stock code.'));
                         return;
@@ -3947,6 +4124,13 @@
                         this.signalLockedFromBacktest = true;
                         this.backtestCompleted = true;
                         this.saveBacktestLockState(this.backtestParams.symbol);
+
+                        if (this.backtestParams.end_date) {
+                            this.historicalSignals.startDate = this.backtestParams.end_date;
+                            this.historicalSignals.endDate = '';
+                            this.historicalSignals.rows = [];
+                            this.historicalSignals.error = '';
+                        }
 
                         this.backtestState.progress = 100;
                         const tradesCount = response.data.trades ? response.data.trades.length : 0;

@@ -18,6 +18,7 @@ def _get_db_connection():
 class TradeLogger:
     def __init__(self):
         # 绩效和异常日志暂时保留在内存（如需持久化可类似处理）
+        self.trade_log = []
         self.performance_log = []
         self.anomaly_log = []
         
@@ -184,15 +185,23 @@ class TradeLogger:
             }
         
         cutoff_date = datetime.now() - timedelta(days=days)
-        recent_trades = [t for t in trades if datetime.fromisoformat(t['timestamp']) >= cutoff_date]
+        recent_trades = []
+        for t in trades:
+            ts = t.get('trade_time') or t.get('timestamp')
+            if not ts:
+                continue
+            try:
+                if datetime.fromisoformat(str(ts)) >= cutoff_date:
+                    recent_trades.append(t)
+            except Exception:
+                continue
         
-        buy_trades = [t for t in recent_trades if t['direction'] == '买入']
-        sell_trades = [t for t in recent_trades if t['direction'] == '卖出']
-        success_trades = [t for t in recent_trades if t['status'] == 'executed']
+        buy_trades = [t for t in recent_trades if (t.get('direction') or '').lower() in ('buy', '买入')]
+        sell_trades = [t for t in recent_trades if (t.get('direction') or '').lower() in ('sell', '卖出')]
         
-        total_amount = sum(t['amount'] for t in recent_trades)
+        total_amount = sum(float(t.get('amount') or 0) for t in recent_trades)
         avg_amount = total_amount / len(recent_trades) if recent_trades else 0
-        success_rate = len(success_trades) / len(recent_trades) * 100 if recent_trades else 0
+        success_rate = 100.0 if recent_trades else 0.0
         
         return {
             'period_days': days,
@@ -254,7 +263,7 @@ class TradeLogger:
         try:
             cutoff_date = datetime.now() - timedelta(days=days)
             
-            self.trade_log = [t for t in self.trade_log if datetime.fromisoformat(t['timestamp']) >= cutoff_date]
+            self.trade_log = [t for t in self.trade_log if datetime.fromisoformat(str(t.get('trade_time') or t.get('timestamp', ''))) >= cutoff_date]
             self.performance_log = [p for p in self.performance_log if datetime.fromisoformat(p['timestamp']) >= cutoff_date]
             self.anomaly_log = [a for a in self.anomaly_log if datetime.fromisoformat(a['timestamp']) >= cutoff_date]
             

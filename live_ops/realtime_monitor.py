@@ -57,18 +57,15 @@ class RealtimeMonitor:
             conn = _get_db_connection()
             
             query = '''
-                SELECT * FROM trades
-                WHERE status = 'pending'
+                SELECT * FROM trade_records
                 ORDER BY trade_time DESC
+                LIMIT 50
             '''
             pending_trades = pd.read_sql_query(query, conn)
             conn.close()
             
             if not pending_trades.empty:
-                logger.info(f"发现{len(pending_trades)}笔待执行交易")
-                
-                for _, trade in pending_trades.iterrows():
-                    self.execute_trade(trade)
+                logger.info(f"最近交易记录{len(pending_trades)}笔")
             
         except Exception as e:
             logger.error(f"监控交易执行失败: {e}")
@@ -76,20 +73,7 @@ class RealtimeMonitor:
     def execute_trade(self, trade: pd.Series):
         """执行单笔交易"""
         try:
-            logger.info(f"执行交易: {trade['direction']} {trade['symbol']} {trade['quantity']}股 @ {trade['price']}")
-            conn = _get_db_connection()
-            
-            cursor = conn.cursor()
-            cursor.execute('''
-                UPDATE trades
-                SET status = 'executed'
-                WHERE id = ?
-            ''', (trade['id'],))
-            
-            conn.commit()
-            conn.close()
-            
-            logger.info(f"交易执行成功: {trade['id']}")
+            logger.info(f"交易记录: {trade.get('direction')} {trade.get('symbol')} {trade.get('quantity')}股 @ {trade.get('price')}")
             
         except Exception as e:
             logger.error(f"执行交易失败: {e}")
@@ -107,7 +91,7 @@ class RealtimeMonitor:
                 return
             
             total_value = positions_df['market_value'].sum()
-            total_cost = positions_df['avg_price'].sum() * positions_df['quantity'].sum()
+            total_cost = (positions_df['avg_price'].fillna(0) * positions_df['quantity'].fillna(0)).sum()
             
             current_pnl = total_value - total_cost
             current_pnl_pct = (current_pnl / total_cost) * 100 if total_cost > 0 else 0
@@ -137,7 +121,10 @@ class RealtimeMonitor:
             conn = _get_db_connection()
             
             query = '''
-                SELECT * FROM stock_history_data
+                SELECT symbol,
+                       open_price as open, high_price as high, low_price as low, close_price as close,
+                       volume as vol, amount
+                FROM stock_history_data
                 WHERE trade_date = (
                     SELECT MAX(trade_date) FROM stock_history_data
                 )

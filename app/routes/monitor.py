@@ -1,10 +1,35 @@
 from flask import Blueprint, jsonify, request
 from live_ops import RealtimeMonitor, TradeLogger, IterationOptimizer, EmergencyHandler
+import threading
+from datetime import datetime, timedelta
 
 monitor_bp = Blueprint('monitor_bp', __name__)
 _emergency_handler = EmergencyHandler()
 _trade_logger = TradeLogger()
 _realtime_monitor = RealtimeMonitor()
+_monitor_thread = None
+
+
+@monitor_bp.route('/api/monitor/start', methods=['POST'])
+def start_monitor():
+    global _monitor_thread
+    try:
+        if _realtime_monitor.is_running:
+            return jsonify({'success': True, 'status': _realtime_monitor.get_status()})
+        _monitor_thread = threading.Thread(target=_realtime_monitor.start_monitoring, daemon=True)
+        _monitor_thread.start()
+        return jsonify({'success': True, 'status': _realtime_monitor.get_status()})
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': '启动监控失败'}), 500
+
+
+@monitor_bp.route('/api/monitor/stop', methods=['POST'])
+def stop_monitor():
+    try:
+        _realtime_monitor.stop_monitoring()
+        return jsonify({'success': True, 'status': _realtime_monitor.get_status()})
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': '停止监控失败'}), 500
 
 @monitor_bp.route('/api/monitor/status', methods=['GET'])
 def get_monitor_status():
@@ -53,6 +78,74 @@ def get_trade_log():
         })
     except Exception as e:
         return jsonify({'error': str(e), 'message': '获取交易日志失败'}), 500
+
+
+@monitor_bp.route('/api/logger/performance', methods=['GET'])
+def get_logger_performance():
+    try:
+        days = request.args.get('days', 30, type=int)
+        limit = request.args.get('limit', 100, type=int)
+        cutoff = datetime.now() - timedelta(days=days)
+        perf = _realtime_monitor.get_performance_history(10000)
+        recent = []
+        for p in perf:
+            ts = p.get('timestamp')
+            if not ts:
+                continue
+            try:
+                if datetime.fromisoformat(str(ts)) >= cutoff:
+                    recent.append(p)
+            except Exception:
+                continue
+        return jsonify({'success': True, 'performance': recent[-limit:]})
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': '获取绩效日志失败'}), 500
+
+
+@monitor_bp.route('/api/logger/anomalies', methods=['GET'])
+def get_logger_anomalies():
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        anomalies = _realtime_monitor.get_anomaly_history(limit)
+        return jsonify({'success': True, 'anomalies': anomalies})
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': '获取异常日志失败'}), 500
+
+
+@monitor_bp.route('/api/logger/statistics', methods=['GET'])
+def get_logger_statistics():
+    try:
+        days = request.args.get('days', 30, type=int)
+        stats = _trade_logger.get_trade_statistics(days=days)
+        return jsonify({'success': True, 'statistics': stats})
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': '获取交易统计失败'}), 500
+
+
+@monitor_bp.route('/api/logger/summary', methods=['GET'])
+def get_logger_summary():
+    try:
+        days = request.args.get('days', 30, type=int)
+        cutoff = datetime.now() - timedelta(days=days)
+        perf = _realtime_monitor.get_performance_history(10000)
+        recent = []
+        for p in perf:
+            ts = p.get('timestamp')
+            if not ts:
+                continue
+            try:
+                if datetime.fromisoformat(str(ts)) >= cutoff:
+                    recent.append(p)
+            except Exception:
+                continue
+        latest = recent[-1] if recent else None
+        summary = {
+            'period_days': days,
+            'latest': latest,
+        }
+        return jsonify({'success': True, 'summary': summary})
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': '获取绩效汇总失败'}), 500
 
 
 @monitor_bp.route('/api/emergency/history', methods=['GET'])
